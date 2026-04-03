@@ -1,0 +1,9 @@
+# Archivos de .NET Core
+bin/
+obj/
+appsettings.Development.json
+
+# Archivos de React / Node
+node_modules/
+dist/
+.env
