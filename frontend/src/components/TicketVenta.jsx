@@ -1,4 +1,3 @@
-// src/components/TicketVenta.jsx
 export default function TicketVenta({ venta, cliente, onNuevaVenta }) {
   const handlePrint = () => window.print();
 
@@ -10,7 +9,6 @@ export default function TicketVenta({ venta, cliente, onNuevaVenta }) {
       </div>
 
       <div className="ticket-body">
-        {/* Éxito */}
         <div className="ticket-success">
           <span style={{ fontSize: 22 }}>✔</span>
           <div>
@@ -54,9 +52,7 @@ export default function TicketVenta({ venta, cliente, onNuevaVenta }) {
           <table className="ticket-table">
             <thead>
               <tr>
-                <th>Nombre Comercial</th>
-                <th>Nombre Genérico</th>
-                <th>Presentación</th>
+                <th>Nombre Producto</th>
                 <th style={{ textAlign: "right" }}>Precio</th>
                 <th style={{ textAlign: "center" }}>Cant.</th>
                 <th style={{ textAlign: "right" }}>Subtotal</th>
@@ -66,8 +62,6 @@ export default function TicketVenta({ venta, cliente, onNuevaVenta }) {
               {venta.detalles.map((d, i) => (
                 <tr key={i}>
                   <td>{d.nombreProducto}</td>
-                  <td>{d.nombreGenerico || "—"}</td>
-                  <td>{d.presentacion || "—"}</td>
                   <td style={{ textAlign: "right", fontFamily: "monospace" }}>
                     ${d.precio.toFixed(2)}
                   </td>
