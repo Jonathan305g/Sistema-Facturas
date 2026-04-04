@@ -11,10 +11,7 @@ public class ClientesController : ControllerBase
 {
     private readonly IDbConnection _db;
 
-    public ClientesController(IDbConnection db)
-    {
-        _db = db;
-    }
+    public ClientesController(IDbConnection db) => _db = db;
 
     // GET api/clientes?cedula=1801234567
     [HttpGet]
@@ -35,7 +32,6 @@ public class ClientesController : ControllerBase
 
             using var cmd = new SqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("@cedula", cedula.Trim());
-
             using var reader = await cmd.ExecuteReaderAsync();
 
             if (!reader.HasRows)
@@ -51,8 +47,8 @@ public class ClientesController : ControllerBase
     }
 
     // GET api/clientes/{id}
-    [HttpGet("{id:int}")]
-    public async Task<IActionResult> ObtenerPorId(int id)
+    [HttpGet("{id}")]
+    public async Task<IActionResult> ObtenerPorId(string id)
     {
         try
         {
@@ -107,7 +103,7 @@ public class ClientesController : ControllerBase
             cmd.Parameters.AddWithValue("@correo",    (object?)cliente.Correo    ?? DBNull.Value);
 
             var scalar = await cmd.ExecuteScalarAsync();
-            cliente.Id = Convert.ToInt32(scalar);
+            cliente.Id = scalar?.ToString() ?? string.Empty;
 
             return CreatedAtAction(nameof(ObtenerPorId), new { id = cliente.Id }, cliente);
         }
@@ -124,7 +120,7 @@ public class ClientesController : ControllerBase
     // ── Helper ──────────────────────────────────────────────────────────────
     private static Cliente MapCliente(SqlDataReader r) => new()
     {
-        Id        = Convert.ToInt32(r["id"]),
+        Id        = r["id"].ToString()!,
         Nombre    = r["nombre"].ToString()!,
         Apellido  = r["apellido"].ToString()!,
         Cedula    = r["cedula"].ToString()!,
