@@ -38,7 +38,7 @@ public class ProductosController : ControllerBase
             {
                 lista.Add(new Producto
                 {
-                    Id     = reader["id"].ToString()!,
+                    Id     = reader.GetInt32(0),
                     Nombre = reader.GetString(1),
                     Precio = reader.GetDecimal(2),
                     Stock  = reader.IsDBNull(3) ? 0 : reader.GetInt32(3)
@@ -53,8 +53,8 @@ public class ProductosController : ControllerBase
     }
 
     // GET api/productos/{id}
-    [HttpGet("{id}")]
-    public async Task<IActionResult> ObtenerPorId(string id)
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> ObtenerPorId(int id)
     {
         try
         {
@@ -75,7 +75,7 @@ public class ProductosController : ControllerBase
             await reader.ReadAsync();
             return Ok(new Producto
             {
-                Id     = reader["id"].ToString()!,
+                Id     = reader.GetInt32(0),
                 Nombre = reader.GetString(1),
                 Precio = reader.GetDecimal(2),
                 Stock  = reader.IsDBNull(3) ? 0 : reader.GetInt32(3)
