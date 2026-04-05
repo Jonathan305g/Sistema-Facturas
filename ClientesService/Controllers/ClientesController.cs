@@ -47,8 +47,8 @@ public class ClientesController : ControllerBase
     }
 
     // GET api/clientes/{id}
-    [HttpGet("{id}")]
-    public async Task<IActionResult> ObtenerPorId(string id)
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> ObtenerPorId(int id)
     {
         try
         {
@@ -79,8 +79,8 @@ public class ClientesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Crear([FromBody] Cliente cliente)
     {
-        if (string.IsNullOrWhiteSpace(cliente.Cedula) ||
-            string.IsNullOrWhiteSpace(cliente.Nombre) ||
+        if (string.IsNullOrWhiteSpace(cliente.Cedula)   ||
+            string.IsNullOrWhiteSpace(cliente.Nombre)   ||
             string.IsNullOrWhiteSpace(cliente.Apellido))
             return BadRequest(new { mensaje = "Nombre, apellido y cédula son obligatorios." });
 
@@ -89,6 +89,7 @@ public class ClientesController : ControllerBase
             using var conn = (SqlConnection)_db;
             await conn.OpenAsync();
 
+            // id es IDENTITY(int) → lo genera SQL Server automáticamente
             const string sql = @"
                 INSERT INTO Clientes (nombre, apellido, cedula, telefono, direccion, correo)
                 OUTPUT INSERTED.id
@@ -103,7 +104,7 @@ public class ClientesController : ControllerBase
             cmd.Parameters.AddWithValue("@correo",    (object?)cliente.Correo    ?? DBNull.Value);
 
             var scalar = await cmd.ExecuteScalarAsync();
-            cliente.Id = scalar?.ToString() ?? string.Empty;
+            cliente.Id = Convert.ToInt32(scalar);
 
             return CreatedAtAction(nameof(ObtenerPorId), new { id = cliente.Id }, cliente);
         }
@@ -117,10 +118,9 @@ public class ClientesController : ControllerBase
         }
     }
 
-    // ── Helper ──────────────────────────────────────────────────────────────
     private static Cliente MapCliente(SqlDataReader r) => new()
     {
-        Id        = r["id"].ToString()!,
+        Id        = Convert.ToInt32(r["id"]),
         Nombre    = r["nombre"].ToString()!,
         Apellido  = r["apellido"].ToString()!,
         Cedula    = r["cedula"].ToString()!,
