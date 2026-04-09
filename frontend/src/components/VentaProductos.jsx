@@ -11,7 +11,7 @@ import "./VentaProductos.css";
 const IVA = 0.15;
 
 function generarNumeroDoc() {
-  return `${new Date().getFullYear()}-UTA-${Math.floor(1000 + Math.random() * 9000)}`;
+  return `${new Date().getFullYear()}-FAC-${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
 function fechaHoy() {
@@ -315,15 +315,15 @@ export default function VentaProductos() {
 
         <div className="vp-actions">
           <button className="vp-btn-save" onClick={handleGuardar} disabled={guardando}>
-            {guardando ? "⏳ Procesando..." : "💾 Guardar Venta"}
+            {guardando ? "⏳ Procesando..." : "Guardar"}
           </button>
           <button className="vp-btn-cancel" onClick={handleNuevaVenta}>
-            🗑 Limpiar
+            Nuevo
           </button>
         </div>
       </div>
 
-      <div className="vp-footer">Autor: </div>
+      <div className="vp-footer">Autor:Jonathan Gamboa & Juan Carvajal  </div>
 
       {modalAbierto && (
         <ModalProductos
