@@ -4,7 +4,7 @@ Sistema de venta de productos con arquitectura de microservicios.
 
 ---
 
-## 🏗️ Arquitectura
+## Arquitectura
 
 ```
 React (port 3000)
@@ -15,7 +15,7 @@ React (port 3000)
 
 ---
 
-## 📋 Pre-requisitos
+## Pre-requisitos
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [Node.js 18+](https://nodejs.org/)
@@ -26,7 +26,7 @@ React (port 3000)
 
 ---
 
-## 🗄️ Paso 1 — Crear las bases de datos
+## Paso 1 — Crear las bases de datos
 
 Abre **SQL Server Management Studio**, conecta a `.\SQLEXPRESS`
 y ejecuta el archivo `database_scripts.sql` completo.
@@ -37,7 +37,7 @@ Esto crea:
 
 ---
 
-## ⚙️ Paso 2 — Configurar la cadena de conexión
+## Paso 2 — Configurar la cadena de conexión
 
 Si tu SQL Server tiene usuario/contraseña (autenticación SQL), edita ambos `appsettings.json`:
 
@@ -73,7 +73,7 @@ dotnet run
 
 ---
 
-## 🌐 Paso 4 — Levantar el frontend React
+## Paso 4 — Levantar el frontend React
 
 ### Terminal 3 — Frontend
 ```bash
@@ -105,7 +105,7 @@ npm run dev
 
 ---
 
-## 💡 Cómo usar el formulario
+## ¿Cómo usar el formulario?
 
 1. **Buscar cliente**: Ingresa la cédula y presiona Enter o el botón 🔍
    - Si existe → se autocompletan los datos
@@ -117,19 +117,7 @@ npm run dev
 
 ---
 
-## 🧪 Datos de prueba
-
-**Clientes disponibles (BD Clientes):**
-- Cédula `1801234567` → Juan Pérez
-- Cédula `1809876543` → María González
-- Cédula `1805551234` → Carlos López
-
-**Productos disponibles (BD GestionV):**
-Paracetamol, Ibuprofeno, Amoxicilina, Omeprazol, Loratadina, Metformina, Atorvastatina, Vitamina C
-
----
-
-## 🛠️ Abrir en VS Code
+## Abrir en VS Code
 
 ```bash
 # Abrir toda la solución
