@@ -1,4 +1,3 @@
-// src/components/ModalProductos.jsx
 import { useState, useEffect } from "react";
 import { listarProductos } from "../services/api";
 
@@ -28,7 +27,7 @@ export default function ModalProductos({ onSeleccionar, onCerrar }) {
 
         <div className="modal-search">
           <input
-            placeholder="Buscar por nombre comercial o genérico..."
+            placeholder="Buscar por nombre..."
             value={buscar}
             onChange={(e) => setBuscar(e.target.value)}
             autoFocus
@@ -49,8 +48,6 @@ export default function ModalProductos({ onSeleccionar, onCerrar }) {
               onClick={() => { onSeleccionar(p); onCerrar(); }}
             >
               <span className="modal-prod-name">{p.nombre}</span>
-              <span className="modal-prod-gen">{p.nombreGenerico || "—"}</span>
-              <span className="modal-prod-pre">{p.presentacion || "—"}</span>
               <span className="modal-prod-price">${p.precio.toFixed(2)}</span>
               <span className="modal-prod-stock">Stock: {p.stock}</span>
             </div>

@@ -14,6 +14,7 @@ public class ProductosController : ControllerBase
     public ProductosController(IDbConnection db) => _db = db;
 
     // GET api/productos
+    // GET api/productos?buscar=paracetamol
     [HttpGet]
     public async Task<IActionResult> Listar([FromQuery] string? buscar = null)
     {
@@ -22,11 +23,10 @@ public class ProductosController : ControllerBase
             using var conn = (SqlConnection)_db;
             await conn.OpenAsync();
 
-            var sql = @"
-                SELECT id, nombre, nombreGenerico, presentacion, precio, stock
+            const string sql = @"
+                SELECT id, nombre, precio, stock
                 FROM   Producto
-                WHERE  (@buscar IS NULL OR nombre LIKE '%' + @buscar + '%'
-                        OR nombreGenerico LIKE '%' + @buscar + '%')
+                WHERE  (@buscar IS NULL OR nombre LIKE '%' + @buscar + '%')
                 ORDER  BY nombre";
 
             using var cmd = new SqlCommand(sql, conn);
@@ -38,12 +38,10 @@ public class ProductosController : ControllerBase
             {
                 lista.Add(new Producto
                 {
-                    Id             = reader.GetInt32(0),
-                    Nombre         = reader.GetString(1),
-                    NombreGenerico = reader.IsDBNull(2) ? null : reader.GetString(2),
-                    Presentacion   = reader.IsDBNull(3) ? null : reader.GetString(3),
-                    Precio         = reader.GetDecimal(4),
-                    Stock          = reader.GetInt32(5)
+                    Id     = reader.GetInt32(0),
+                    Nombre = reader.GetString(1),
+                    Precio = reader.GetDecimal(2),
+                    Stock  = reader.IsDBNull(3) ? 0 : reader.GetInt32(3)
                 });
             }
             return Ok(lista);
@@ -64,7 +62,7 @@ public class ProductosController : ControllerBase
             await conn.OpenAsync();
 
             const string sql = @"
-                SELECT id, nombre, nombreGenerico, presentacion, precio, stock
+                SELECT id, nombre, precio, stock
                 FROM   Producto WHERE id = @id";
 
             using var cmd = new SqlCommand(sql, conn);
@@ -77,12 +75,10 @@ public class ProductosController : ControllerBase
             await reader.ReadAsync();
             return Ok(new Producto
             {
-                Id             = reader.GetInt32(0),
-                Nombre         = reader.GetString(1),
-                NombreGenerico = reader.IsDBNull(2) ? null : reader.GetString(2),
-                Presentacion   = reader.IsDBNull(3) ? null : reader.GetString(3),
-                Precio         = reader.GetDecimal(4),
-                Stock          = reader.GetInt32(5)
+                Id     = reader.GetInt32(0),
+                Nombre = reader.GetString(1),
+                Precio = reader.GetDecimal(2),
+                Stock  = reader.IsDBNull(3) ? 0 : reader.GetInt32(3)
             });
         }
         catch (Exception ex)

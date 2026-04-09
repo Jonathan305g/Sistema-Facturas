@@ -11,10 +11,7 @@ public class ClientesController : ControllerBase
 {
     private readonly IDbConnection _db;
 
-    public ClientesController(IDbConnection db)
-    {
-        _db = db;
-    }
+    public ClientesController(IDbConnection db) => _db = db;
 
     // GET api/clientes?cedula=1801234567
     [HttpGet]
@@ -35,7 +32,6 @@ public class ClientesController : ControllerBase
 
             using var cmd = new SqlCommand(sql, conn);
             cmd.Parameters.AddWithValue("@cedula", cedula.Trim());
-
             using var reader = await cmd.ExecuteReaderAsync();
 
             if (!reader.HasRows)
@@ -83,8 +79,8 @@ public class ClientesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Crear([FromBody] Cliente cliente)
     {
-        if (string.IsNullOrWhiteSpace(cliente.Cedula) ||
-            string.IsNullOrWhiteSpace(cliente.Nombre) ||
+        if (string.IsNullOrWhiteSpace(cliente.Cedula)   ||
+            string.IsNullOrWhiteSpace(cliente.Nombre)   ||
             string.IsNullOrWhiteSpace(cliente.Apellido))
             return BadRequest(new { mensaje = "Nombre, apellido y cédula son obligatorios." });
 
@@ -93,6 +89,7 @@ public class ClientesController : ControllerBase
             using var conn = (SqlConnection)_db;
             await conn.OpenAsync();
 
+            // id es IDENTITY(int) → lo genera SQL Server automáticamente
             const string sql = @"
                 INSERT INTO Clientes (nombre, apellido, cedula, telefono, direccion, correo)
                 OUTPUT INSERTED.id
@@ -121,7 +118,6 @@ public class ClientesController : ControllerBase
         }
     }
 
-    // ── Helper ──────────────────────────────────────────────────────────────
     private static Cliente MapCliente(SqlDataReader r) => new()
     {
         Id        = Convert.ToInt32(r["id"]),

@@ -1,13 +1,11 @@
-// src/components/VentaProductos.jsx
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import {
   buscarClientePorCedula,
   crearCliente,
-  listarProductos,
   registrarVenta,
 } from "../services/api";
 import ModalProductos from "./ModalProductos";
-import TicketVenta from "./TicketVenta";
+import TicketVenta    from "./TicketVenta";
 import "./VentaProductos.css";
 
 const IVA = 0.15;
@@ -21,9 +19,8 @@ function fechaHoy() {
 }
 
 export default function VentaProductos() {
-  // ── Estado general ─────────────────────────────────────────────────────────
-  const [numeroDoc]   = useState(generarNumeroDoc);
-  const [fechaVenta]  = useState(fechaHoy);
+  const [numeroDoc]  = useState(generarNumeroDoc);
+  const [fechaVenta] = useState(fechaHoy);
 
   // Cliente
   const [cedula,    setCedula]    = useState("");
@@ -35,18 +32,16 @@ export default function VentaProductos() {
   const [idCliente, setIdCliente] = useState(null);
   const [buscando,  setBuscando]  = useState(false);
 
-  // Detalle venta
-  const [detalles, setDetalles] = useState([]);
-
-  // Modal productos
+  // Detalle
+  const [detalles,     setDetalles]     = useState([]);
   const [modalAbierto, setModalAbierto] = useState(false);
 
-  // Resultado venta
+  // Resultado
   const [ventaResult, setVentaResult] = useState(null);
   const [guardando,   setGuardando]   = useState(false);
   const [error,       setError]       = useState("");
 
-  // ── Buscar cliente por cédula ──────────────────────────────────────────────
+  // ── Buscar cliente ─────────────────────────────────────────────────
   const handleBuscarCliente = useCallback(async () => {
     if (!cedula.trim()) return;
     setBuscando(true);
@@ -57,11 +52,10 @@ export default function VentaProductos() {
         setIdCliente(cli.id);
         setApellidos(cli.apellido);
         setNombres(cli.nombre);
-        setTelefono(cli.telefono || "");
+        setTelefono(cli.telefono   || "");
         setDireccion(cli.direccion || "");
-        setCorreo(cli.correo || "");
+        setCorreo(cli.correo       || "");
       } else {
-        // Limpiar para crear nuevo
         setIdCliente(null);
         setApellidos(""); setNombres(""); setTelefono(""); setDireccion(""); setCorreo("");
       }
@@ -72,17 +66,13 @@ export default function VentaProductos() {
     }
   }, [cedula]);
 
-  // Buscar al presionar Enter en cédula
-  const handleCedulaKeyDown = (e) => {
-    if (e.key === "Enter") handleBuscarCliente();
-  };
+  const handleCedulaKeyDown = (e) => { if (e.key === "Enter") handleBuscarCliente(); };
 
-  // ── Agregar producto desde modal ───────────────────────────────────────────
+  // ── Agregar producto ───────────────────────────────────────────────
   const handleAgregarProducto = (producto) => {
     setDetalles((prev) => {
       const idx = prev.findIndex((d) => d.idProducto === producto.id);
       if (idx >= 0) {
-        // Incrementar cantidad si ya existe
         const nuevo = [...prev];
         const cant  = nuevo[idx].cantidad + 1;
         nuevo[idx]  = { ...nuevo[idx], cantidad: cant, subtotal: cant * nuevo[idx].precio };
@@ -91,13 +81,11 @@ export default function VentaProductos() {
       return [
         ...prev,
         {
-          idProducto:     producto.id,
-          nombreComercial: producto.nombre,
-          nombreGenerico:  producto.nombreGenerico || "",
-          presentacion:    producto.presentacion   || "",
-          precio:          producto.precio,
-          cantidad:        1,
-          subtotal:        producto.precio,
+          idProducto: producto.id,
+          nombre:     producto.nombre,
+          precio:     producto.precio,
+          cantidad:   1,
+          subtotal:   producto.precio,
         },
       ];
     });
@@ -112,29 +100,27 @@ export default function VentaProductos() {
     });
   };
 
-  const handleEliminarDetalle = (idx) => {
+  const handleEliminarDetalle = (idx) =>
     setDetalles((prev) => prev.filter((_, i) => i !== idx));
-  };
 
-  // ── Totales ────────────────────────────────────────────────────────────────
+  // ── Totales ────────────────────────────────────────────────────────
   const subtotal = detalles.reduce((s, d) => s + d.subtotal, 0);
   const iva      = subtotal * IVA;
   const total    = subtotal + iva;
 
-  // ── Guardar venta ──────────────────────────────────────────────────────────
+  // ── Guardar ────────────────────────────────────────────────────────
   const handleGuardar = async () => {
     setError("");
-    if (!cedula.trim()) { setError("Ingrese la cédula del cliente."); return; }
-    if (detalles.length === 0) { setError("Agregue al menos un producto."); return; }
+    if (!cedula.trim())       { setError("Ingrese la cédula del cliente."); return; }
+    if (!detalles.length)     { setError("Agregue al menos un producto."); return; }
 
     setGuardando(true);
     try {
       let clienteId = idCliente;
 
-      // Si no existe el cliente, lo creamos primero
       if (!clienteId) {
         if (!nombres.trim() || !apellidos.trim()) {
-          setError("Complete los datos del cliente (nombres y apellidos) para registrarlo.");
+          setError("Complete nombres y apellidos para registrar el cliente.");
           setGuardando(false);
           return;
         }
@@ -160,14 +146,14 @@ export default function VentaProductos() {
     }
   };
 
-  // ── Nueva venta ────────────────────────────────────────────────────────────
+  // ── Nueva venta ────────────────────────────────────────────────────
   const handleNuevaVenta = () => {
     setCedula(""); setApellidos(""); setNombres(""); setTelefono("");
     setDireccion(""); setCorreo(""); setIdCliente(null);
     setDetalles([]); setVentaResult(null); setError("");
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Ticket ─────────────────────────────────────────────────────────
   if (ventaResult) {
     return (
       <TicketVenta
@@ -180,7 +166,7 @@ export default function VentaProductos() {
 
   return (
     <div className="vp-wrapper">
-      {/* ── Barra de título ── */}
+      {/* Titlebar */}
       <div className="vp-titlebar">
         <span className="vp-titlebar-icon">💊</span>
         <span className="vp-titlebar-title">Venta de Productos</span>
@@ -189,7 +175,7 @@ export default function VentaProductos() {
         </div>
       </div>
 
-      {/* ── Menú ── */}
+      {/* Menú */}
       <div className="vp-menubar">
         <span>Archivo</span>
         <span>Herramientas</span>
@@ -197,7 +183,7 @@ export default function VentaProductos() {
       </div>
 
       <div className="vp-body">
-        {/* ══ DATOS DE VENTA ══ */}
+        {/* DATOS DE VENTA */}
         <section className="vp-section">
           <div className="vp-section-header">DATOS DE VENTA</div>
           <div className="vp-row vp-space-between">
@@ -212,7 +198,7 @@ export default function VentaProductos() {
           </div>
         </section>
 
-        {/* ══ DATOS DEL CLIENTE ══ */}
+        {/* DATOS DEL CLIENTE */}
         <section className="vp-section">
           <div className="vp-section-header">DATOS DEL CLIENTE</div>
           <div className="vp-client-grid">
@@ -233,7 +219,7 @@ export default function VentaProductos() {
               >
                 {buscando ? "⏳" : "🔍"}
               </button>
-              {idCliente && <span className="vp-badge">✔ Registrado</span>}
+              {idCliente  && <span className="vp-badge">✔ Registrado</span>}
               {!idCliente && cedula && !buscando && (
                 <span className="vp-badge vp-badge-new">✦ Nuevo</span>
               )}
@@ -262,8 +248,7 @@ export default function VentaProductos() {
             </div>
 
             <div className="vp-field-inline">
-              <label></label>
-              <span />
+              <label></label><span />
             </div>
             <div className="vp-field-inline">
               <label>Correo:</label>
@@ -273,27 +258,23 @@ export default function VentaProductos() {
           </div>
         </section>
 
-        {/* ══ DETALLE DE VENTA ══ */}
+        {/* DETALLE DE VENTA */}
         <section className="vp-section">
           <div className="vp-section-header">DATOS DEL DETALLE DE VENTA</div>
 
-          {/* Cabecera tabla */}
+          {/* Cabecera tabla — solo Nombre, Precio, Cantidad */}
           <div className="vp-table-header">
-            <span className="col-nombre">Nombre Comercial</span>
-            <span className="col-generico">Nombre Genérico</span>
-            <span className="col-presenta">Presentación</span>
+            <span className="col-nombre">Nombre Producto</span>
             <span className="col-precio">Precio</span>
             <span className="col-cant">Cantidad</span>
             <button
               className="vp-btn-add"
               onClick={() => setModalAbierto(true)}
-              title="Agregar producto"
             >
               ＋ Productos
             </button>
           </div>
 
-          {/* Filas */}
           <div className="vp-table-body">
             {detalles.length === 0 && (
               <div className="vp-empty">
@@ -302,9 +283,7 @@ export default function VentaProductos() {
             )}
             {detalles.map((d, i) => (
               <div key={i} className="vp-table-row">
-                <span className="col-nombre">{d.nombreComercial}</span>
-                <span className="col-generico">{d.nombreGenerico}</span>
-                <span className="col-presenta">{d.presentacion}</span>
+                <span className="col-nombre">{d.nombre}</span>
                 <span className="col-precio">${d.precio.toFixed(2)}</span>
                 <span className="col-cant">
                   <input
@@ -322,24 +301,19 @@ export default function VentaProductos() {
           {/* Totales */}
           <div className="vp-totals">
             <div className="vp-total-row">
-              <span>SUBTOTAL</span>
-              <span>${subtotal.toFixed(2)}</span>
+              <span>SUBTOTAL</span><span>${subtotal.toFixed(2)}</span>
             </div>
             <div className="vp-total-row">
-              <span>IVA (15%)</span>
-              <span>${iva.toFixed(2)}</span>
+              <span>IVA (15%)</span><span>${iva.toFixed(2)}</span>
             </div>
             <div className="vp-total-row vp-total-final">
-              <span>TOTAL</span>
-              <span>${total.toFixed(2)}</span>
+              <span>TOTAL</span><span>${total.toFixed(2)}</span>
             </div>
           </div>
         </section>
 
-        {/* Error */}
         {error && <div className="vp-error">⚠ {error}</div>}
 
-        {/* Botón guardar */}
         <div className="vp-actions">
           <button className="vp-btn-save" onClick={handleGuardar} disabled={guardando}>
             {guardando ? "⏳ Procesando..." : "💾 Guardar Venta"}
@@ -350,12 +324,8 @@ export default function VentaProductos() {
         </div>
       </div>
 
-      {/* ── Footer ── */}
-      <div className="vp-footer">
-        Autor: 
-      </div>
+      <div className="vp-footer">Autor: </div>
 
-      {/* ── Modal Productos ── */}
       {modalAbierto && (
         <ModalProductos
           onSeleccionar={handleAgregarProducto}

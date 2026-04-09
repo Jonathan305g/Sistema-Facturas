@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using System.Data;
-using System.Text.Json;
 using VentasService.Models;
 
 namespace VentasService.Controllers;
@@ -10,9 +9,9 @@ namespace VentasService.Controllers;
 [Route("api/[controller]")]
 public class VentasController : ControllerBase
 {
-    private readonly IDbConnection    _db;
+    private readonly IDbConnection      _db;
     private readonly IHttpClientFactory _httpFactory;
-    private const    decimal           IVA_RATE = 0.15m;
+    private const    decimal            IVA_RATE = 0.15m;
 
     public VentasController(IDbConnection db, IHttpClientFactory httpFactory)
     {
@@ -30,51 +29,54 @@ public class VentasController : ControllerBase
         if (request.Detalles == null || request.Detalles.Count == 0)
             return BadRequest(new { mensaje = "Debe agregar al menos un producto." });
 
-        // ── 1. Verificar cliente en microservicio Clientes ──────────────────
-        var httpClient = _httpFactory.CreateClient("ClientesService");
+        // ── 1. Verificar cliente ────────────────────────────────────────
+        var http = _httpFactory.CreateClient("ClientesService");
         HttpResponseMessage clienteResp;
         try
         {
-            clienteResp = await httpClient.GetAsync($"api/clientes/{request.IdCliente}");
+            clienteResp = await http.GetAsync($"api/clientes/{request.IdCliente}");
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
-            return StatusCode(503, new { mensaje = "Servicio de Clientes no disponible." });
+            return StatusCode(503, new { mensaje = "Servicio de Clientes no disponible.", detalle = ex.Message });
         }
 
         if (!clienteResp.IsSuccessStatusCode)
             return NotFound(new { mensaje = "Cliente no encontrado en el sistema." });
 
-        // ── 2. Procesar venta en BD GestionV ──────────────────────────────
+        // ── 2. Abrir conexión y transacción ─────────────────────────────
         using var conn = (SqlConnection)_db;
         await conn.OpenAsync();
         using var tx = conn.BeginTransaction();
 
         try
         {
-            var numeroDoc = $"{DateTime.Now.Year}-UTA-{new Random().Next(1000, 9999)}";
-
-            // Insertar cabecera Venta
+            // ── INSERT Venta ─────────────────────────────────────────────
+            // IMPORTANTE: NO se incluye "id" → SQL Server lo genera por IDENTITY
+            // numeroDocumento empieza en 0; se actualiza con el id real justo después
             const string sqlVenta = @"
                 INSERT INTO Venta (id_Cliente, fechaVenta, numeroDocumento)
                 OUTPUT INSERTED.id
-                VALUES (@idCliente, GETDATE(), @numDoc)";
+                VALUES (@idCliente, GETDATE(), 0)";
 
             using var cmdVenta = new SqlCommand(sqlVenta, conn, tx);
             cmdVenta.Parameters.AddWithValue("@idCliente", request.IdCliente);
-            cmdVenta.Parameters.AddWithValue("@numDoc",    numeroDoc);
-            var idVenta = (int)(await cmdVenta.ExecuteScalarAsync())!;
+            var idVenta = Convert.ToInt32(await cmdVenta.ExecuteScalarAsync());
 
-            var detallesResp = new List<VentaDetalleResponse>();
+            // Actualizar numeroDocumento con el id real generado por IDENTITY
+            const string sqlDoc = "UPDATE Venta SET numeroDocumento = @id WHERE id = @id";
+            using var cmdDoc = new SqlCommand(sqlDoc, conn, tx);
+            cmdDoc.Parameters.AddWithValue("@id", idVenta);
+            await cmdDoc.ExecuteNonQueryAsync();
+
+            // ── INSERT Detalles ──────────────────────────────────────────
+            var detallesResp  = new List<VentaDetalleResponse>();
             decimal subtotalTotal = 0;
 
             foreach (var det in request.Detalles)
             {
-                // Obtener producto y validar stock
-                const string sqlProd = @"
-                    SELECT id, nombre, nombreGenerico, presentacion, precio, stock
-                    FROM   Producto WHERE id = @id";
-
+                // Leer producto
+                const string sqlProd = "SELECT id, nombre, precio, stock FROM Producto WHERE id = @id";
                 using var cmdProd = new SqlCommand(sqlProd, conn, tx);
                 cmdProd.Parameters.AddWithValue("@id", det.IdProducto);
                 using var rdr = await cmdProd.ExecuteReaderAsync();
@@ -86,11 +88,9 @@ public class VentasController : ControllerBase
                 }
 
                 await rdr.ReadAsync();
-                var nombre    = rdr.GetString(1);
-                var generico  = rdr.IsDBNull(2) ? null : rdr.GetString(2);
-                var presenta  = rdr.IsDBNull(3) ? null : rdr.GetString(3);
-                var precio    = rdr.GetDecimal(4);
-                var stock     = rdr.GetInt32(5);
+                var nombre = rdr.GetString(1);
+                var precio = rdr.GetDecimal(2);
+                var stock  = rdr.IsDBNull(3) ? 0 : rdr.GetInt32(3);
                 await rdr.CloseAsync();
 
                 if (stock < det.Cantidad)
@@ -102,7 +102,7 @@ public class VentasController : ControllerBase
                 var subtotal = precio * det.Cantidad;
                 subtotalTotal += subtotal;
 
-                // Insertar detalle
+                // INSERT VentaDetalle — tampoco incluye "id", es IDENTITY
                 const string sqlDet = @"
                     INSERT INTO VentaDetalle (id_Venta, id_Producto, precio, cantidad, subtotal)
                     OUTPUT INSERTED.id
@@ -114,7 +114,7 @@ public class VentasController : ControllerBase
                 cmdDet.Parameters.AddWithValue("@precio",  precio);
                 cmdDet.Parameters.AddWithValue("@cant",    det.Cantidad);
                 cmdDet.Parameters.AddWithValue("@sub",     subtotal);
-                var idDet = (int)(await cmdDet.ExecuteScalarAsync())!;
+                var idDet = Convert.ToInt32(await cmdDet.ExecuteScalarAsync());
 
                 // Descontar stock
                 const string sqlStock = "UPDATE Producto SET stock = stock - @cant WHERE id = @id";
@@ -128,8 +128,6 @@ public class VentasController : ControllerBase
                     Id             = idDet,
                     IdProducto     = det.IdProducto,
                     NombreProducto = nombre,
-                    NombreGenerico = generico,
-                    Presentacion   = presenta,
                     Precio         = precio,
                     Cantidad       = det.Cantidad,
                     Subtotal       = subtotal
@@ -146,7 +144,7 @@ public class VentasController : ControllerBase
                 Id              = idVenta,
                 IdCliente       = request.IdCliente,
                 FechaVenta      = DateTime.Now,
-                NumeroDocumento = numeroDoc,
+                NumeroDocumento = idVenta,
                 Detalles        = detallesResp,
                 Subtotal        = subtotalTotal,
                 Iva             = iva,
@@ -184,15 +182,15 @@ public class VentasController : ControllerBase
                 Id              = rdrV.GetInt32(0),
                 IdCliente       = rdrV.GetInt32(1),
                 FechaVenta      = rdrV.GetDateTime(2),
-                NumeroDocumento = rdrV.GetString(3),
+                NumeroDocumento = rdrV.GetInt32(3),
             };
             await rdrV.CloseAsync();
 
             const string sqlD = @"
-                SELECT vd.id, vd.id_Producto, p.nombre, p.nombreGenerico, p.presentacion,
+                SELECT vd.id, vd.id_Producto, p.nombre,
                        vd.precio, vd.cantidad, vd.subtotal
                 FROM   VentaDetalle vd
-                JOIN   Producto     p  ON p.id = vd.id_Producto
+                JOIN   Producto     p ON p.id = vd.id_Producto
                 WHERE  vd.id_Venta = @idVenta";
 
             using var cmdD = new SqlCommand(sqlD, conn);
@@ -206,11 +204,9 @@ public class VentasController : ControllerBase
                     Id             = rdrD.GetInt32(0),
                     IdProducto     = rdrD.GetInt32(1),
                     NombreProducto = rdrD.GetString(2),
-                    NombreGenerico = rdrD.IsDBNull(3) ? null : rdrD.GetString(3),
-                    Presentacion   = rdrD.IsDBNull(4) ? null : rdrD.GetString(4),
-                    Precio         = rdrD.GetDecimal(5),
-                    Cantidad       = rdrD.GetInt32(6),
-                    Subtotal       = rdrD.GetDecimal(7)
+                    Precio         = rdrD.GetDecimal(3),
+                    Cantidad       = rdrD.GetInt32(4),
+                    Subtotal       = rdrD.GetDecimal(5)
                 });
             }
 
