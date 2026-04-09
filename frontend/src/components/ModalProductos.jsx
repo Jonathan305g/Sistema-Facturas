@@ -21,13 +21,13 @@ export default function ModalProductos({ onSeleccionar, onCerrar }) {
     <div className="modal-overlay" onClick={onCerrar}>
       <div className="modal-box" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <span>💊 Seleccionar Producto</span>
+          <span>Seleccionar Producto</span>
           <button className="modal-close" onClick={onCerrar}>✕</button>
         </div>
 
         <div className="modal-search">
           <input
-            placeholder="Buscar por nombre..."
+            placeholder="Buscar productos..."
             value={buscar}
             onChange={(e) => setBuscar(e.target.value)}
             autoFocus

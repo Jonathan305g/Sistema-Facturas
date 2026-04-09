@@ -168,7 +168,6 @@ export default function VentaProductos() {
     <div className="vp-wrapper">
       {/* Titlebar */}
       <div className="vp-titlebar">
-        <span className="vp-titlebar-icon">💊</span>
         <span className="vp-titlebar-title">Venta de Productos</span>
         <div className="vp-titlebar-btns">
           <span>─</span><span>□</span><span>✕</span>
